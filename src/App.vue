@@ -1,6 +1,14 @@
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 import { Book, Brain, MessageSquare, BarChart2, Settings } from 'lucide-vue-next';
+import { useSettingsStore } from './stores/settings';
+
+const settingsStore = useSettingsStore();
+
+onMounted(async () => {
+  await settingsStore.loadSettings();
+});
 </script>
 
 <template>
