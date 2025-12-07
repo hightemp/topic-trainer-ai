@@ -1,5 +1,12 @@
-# Vue 3 + TypeScript + Vite
+# topic-trainer-ai
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Навайбкоженное приложение для обучения и тренировки знаний с использованием искусственного интеллекта.
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+## Особенности
+
+- **AI-Powered Question Generation**: Автоматическое создание вопросов по заданным темам с использованием AI.
+- **Interactive Learning**: Интерактивные тренировки с обратной связью от AI.
+- **Progress Tracking**: Отслеживание прогресса и слабых мест.
+- **Customizable**: Настройка категорий, тегов и сложности вопросов.
+- **Markdown Support**: Поддержка Markdown для вопросов и ответов.
+
