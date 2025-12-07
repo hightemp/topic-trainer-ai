@@ -17,7 +17,28 @@ const emit = defineEmits<{
   (e: 'drop', event: DragEvent, node: any): void;
 }>();
 
+import { watch } from 'vue';
+
 const expanded = ref<Set<string>>(new Set());
+
+// Initialize expanded state
+const initExpanded = (nodes: any[]) => {
+  nodes.forEach(node => {
+    expanded.value.add(node.id);
+    if (node.children && node.children.length > 0) {
+      initExpanded(node.children);
+    }
+  });
+};
+
+// Watch for nodes changes to auto-expand new nodes or initial load
+watch(() => props.nodes, (newNodes) => {
+  // Only expand if it's the first load or we want to auto-expand everything
+  // For now, let's just ensure all are expanded on load if set is empty
+  if (expanded.value.size === 0 && newNodes.length > 0) {
+    initExpanded(newNodes);
+  }
+}, { immediate: true });
 
 function toggle(id: string) {
   if (expanded.value.has(id)) {
