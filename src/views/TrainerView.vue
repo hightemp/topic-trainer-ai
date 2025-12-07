@@ -50,10 +50,32 @@ function toggleTag(tag: string) {
 function startSession() {
   const now = Date.now();
   
+  // Helper to get all descendant category IDs
+  const getDescendantIds = (parentId: string): string[] => {
+    const children = dataStore.categories.filter(c => c.parentId === parentId);
+    let ids = children.map(c => c.id);
+    children.forEach(c => {
+      ids = [...ids, ...getDescendantIds(c.id)];
+    });
+    return ids;
+  };
+
+  // Expand selected categories to include children
+  const expandedCategories = new Set<string>();
+  selectedCategories.value.forEach(catId => {
+    expandedCategories.add(catId);
+    getDescendantIds(catId).forEach(id => expandedCategories.add(id));
+  });
+
   // Filter questions based on selection and due date (Spaced Repetition)
   let candidates = dataStore.questions.filter(q => {
-    // Category filter
-    if (selectedCategories.value.size > 0 && !selectedCategories.value.has(q.categoryId)) return false;
+    // Category filter (include descendants)
+    // If no categories selected, include all (or handle as "no filter")
+    // But if categories ARE selected, we must check if question belongs to one of them OR their descendants.
+    if (selectedCategories.value.size > 0) {
+       if (!expandedCategories.has(q.categoryId)) return false;
+    }
+    
     // Tag filter (if tags selected, must match at least one)
     if (selectedTags.value.size > 0 && !q.tags.some(t => selectedTags.value.has(t))) return false;
     return true;

@@ -100,16 +100,40 @@ function onDragStart(event: DragEvent, node: any) {
   }
 }
 
-async function onDrop(_event: DragEvent, targetNode: any) {
+
+// Question Drag & Drop
+const draggedQuestion = ref<Question | null>(null);
+
+function onQuestionDragStart(event: DragEvent, question: Question) {
+  draggedQuestion.value = question;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', question.id);
+    event.dataTransfer.setData('type', 'question');
+  }
+}
+
+// Update onDrop to handle questions
+async function onDrop(event: DragEvent, targetNode: any) {
+  const type = event.dataTransfer?.getData('type');
+  
+  if (type === 'question' && draggedQuestion.value) {
+    // Move question to category
+    if (draggedQuestion.value.categoryId !== targetNode.id) {
+      await dataStore.updateQuestion({
+        ...draggedQuestion.value,
+        categoryId: targetNode.id
+      });
+      // If current view is filtered by old category, question will disappear (correct behavior)
+    }
+    draggedQuestion.value = null;
+    return;
+  }
+
+  // Existing category logic
   const draggedId = draggedNode.value?.id;
   if (!draggedId || draggedId === targetNode.id) return;
 
-  // Prevent circular dependency (cannot drop parent into child)
-  // Simple check: if targetNode is a descendant of draggedNode
-  // We need a way to check descendants. For now, let's just allow move and handle basic cases.
-  // A better check would be traversing up from targetNode to see if draggedNode is an ancestor.
-  
-  // Update parentId
   const category = dataStore.categories.find(c => c.id === draggedId);
   if (category) {
     await dataStore.updateCategory({
@@ -118,6 +142,17 @@ async function onDrop(_event: DragEvent, targetNode: any) {
     });
   }
   draggedNode.value = null;
+}
+
+function getDifficultyLabel(diff: number) {
+  const labels = ['Легкий', 'Простой', 'Средний', 'Сложный', 'Эксперт'];
+  return labels[diff - 1] || diff;
+}
+
+function getDifficultyClass(diff: number) {
+  if (diff <= 2) return 'diff-easy';
+  if (diff === 3) return 'diff-medium';
+  return 'diff-hard';
 }
 </script>
 
@@ -165,10 +200,16 @@ async function onDrop(_event: DragEvent, targetNode: any) {
 
         <div v-else class="questions-list mt-4">
           <div v-for="q in filteredQuestions" :key="q.id" class="question-card">
-            <div class="q-content">
+            <div
+              class="q-content"
+              draggable="true"
+              @dragstart="onQuestionDragStart($event, q)"
+            >
               <div class="q-text">{{ q.text }}</div>
               <div class="q-meta">
-                <span class="badge">Diff: {{ q.difficulty }}</span>
+                <span class="badge" :class="getDifficultyClass(q.difficulty)">
+                  {{ getDifficultyLabel(q.difficulty) }}
+                </span>
                 <span v-for="tag in q.tags" :key="tag" class="badge tag">{{ tag }}</span>
               </div>
             </div>
@@ -279,6 +320,10 @@ async function onDrop(_event: DragEvent, targetNode: any) {
   border-color: var(--color-primary);
   background-color: rgba(100, 108, 255, 0.1);
 }
+
+.diff-easy { color: var(--color-success); border-color: var(--color-success); background-color: rgba(34, 197, 94, 0.1); }
+.diff-medium { color: var(--color-warning); border-color: var(--color-warning); background-color: rgba(245, 158, 11, 0.1); }
+.diff-hard { color: var(--color-danger); border-color: var(--color-danger); background-color: rgba(239, 68, 68, 0.1); }
 
 .q-actions {
   display: flex;
