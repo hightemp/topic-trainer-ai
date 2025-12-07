@@ -203,10 +203,7 @@ function stopResize() {
 
 function onResizerMove(e: MouseEvent) {
   if (!isResizing.value) return;
-  // Limit width
-  const newWidth = e.clientX - 250; // Subtract sidebar width offset if needed, but here clientX is from window left
-  // Actually sidebar is inside layout. Let's assume sidebar is first element.
-  // We need relative position or just use clientX if sidebar is at left edge.
+  
   // Sidebar is inside .app-layout -> .sidebar (250px) -> router-view -> .library-layout -> .categories-sidebar
   // So e.clientX includes main sidebar width (250px).
   
