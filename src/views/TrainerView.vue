@@ -5,7 +5,7 @@ import { aiService } from '../services/ai';
 import { dbService } from '../services/db';
 import { v4 as uuidv4 } from 'uuid';
 import { marked } from 'marked';
-import { Play, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-vue-next';
+import { Play, CheckCircle, XCircle, Clock, AlertCircle, ListTree, Circle } from 'lucide-vue-next';
 import type { Question, Attempt } from '../types';
 
 const dataStore = useDataStore();
@@ -23,6 +23,7 @@ const currentAnswer = ref('');
 const isSubmitting = ref(false);
 const startTime = ref(0);
 const currentFeedback = ref<{ score: number; feedback: string } | null>(null);
+const showTree = ref(false);
 
 // Stats
 const sessionResults = ref<Attempt[]>([]);
@@ -85,7 +86,8 @@ function startSession() {
   candidates.sort((a, b) => a.nextReviewDate - b.nextReviewDate);
 
   // Take top 20 or all
-  sessionQuestions.value = candidates.slice(0, 20);
+  // sessionQuestions.value = candidates.slice(0, 20);
+  sessionQuestions.value = candidates;
   
   if (sessionQuestions.value.length === 0) {
     alert('Нет вопросов, соответствующих критериям.');
@@ -201,6 +203,11 @@ function nextQuestion() {
 function renderMarkdown(text: string) {
   return marked(text || '');
 }
+
+function getCategoryName(id: string) {
+  const cat = dataStore.categories.find(c => c.id === id);
+  return cat ? cat.name : 'Unknown';
+}
 </script>
 
 <template>
@@ -257,7 +264,29 @@ function renderMarkdown(text: string) {
       
       <div class="question-header">
         <span>Вопрос {{ currentQuestionIndex + 1 }} из {{ sessionQuestions.length }}</span>
+        <button class="icon-btn" @click="showTree = true" title="Показать дерево вопросов">
+          <ListTree :size="16" />
+        </button>
         <span v-if="useTimer" class="timer"><Clock :size="16"/> ...</span>
+      </div>
+
+      <div v-if="showTree" class="modal-overlay" @click="showTree = false">
+        <div class="modal-content" @click.stop>
+          <h3>Вопросы в сессии</h3>
+          <ul class="session-tree">
+            <li v-for="(q, idx) in sessionQuestions" :key="q.id" :class="{ active: idx === currentQuestionIndex }">
+              <span class="status-icon">
+                <CheckCircle v-if="idx < currentQuestionIndex" :size="14" class="text-success" />
+                <Circle v-else :size="14" />
+              </span>
+              <div class="q-info">
+                <span class="q-cat">{{ getCategoryName(q.categoryId) }}</span>
+                <span class="q-text">{{ q.text.substring(0, 50) }}...</span>
+              </div>
+            </li>
+          </ul>
+          <button class="primary mt-4" @click="showTree = false">Закрыть</button>
+        </div>
       </div>
 
       <div class="card question-card" v-if="sessionQuestions[currentQuestionIndex]">
@@ -407,4 +436,63 @@ function renderMarkdown(text: string) {
 
 .text-success { color: var(--color-success); }
 .text-danger { color: var(--color-danger); }
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal-content {
+  background: var(--color-surface);
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.session-tree {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.session-tree li {
+  padding: 8px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.9em;
+}
+
+.session-tree li.active {
+  background-color: var(--color-surface-hover);
+  font-weight: bold;
+}
+
+.status-icon {
+  display: flex;
+  align-items: center;
+  margin-top: 3px;
+}
+
+.q-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.q-cat {
+  font-size: 0.8em;
+  opacity: 0.6;
+}
 </style>
