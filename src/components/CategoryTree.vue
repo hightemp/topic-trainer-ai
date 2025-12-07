@@ -13,6 +13,8 @@ const emit = defineEmits<{
   (e: 'add', parentId: string | null): void;
   (e: 'edit', category: Category): void;
   (e: 'delete', id: string): void;
+  (e: 'dragstart', event: DragEvent, node: any): void;
+  (e: 'drop', event: DragEvent, node: any): void;
 }>();
 
 const expanded = ref<Set<string>>(new Set());
@@ -33,10 +35,14 @@ function select(id: string) {
 <template>
   <ul class="tree-list">
     <li v-for="node in nodes" :key="node.id" class="tree-item">
-      <div 
-        class="tree-content" 
+      <div
+        class="tree-content"
         :class="{ 'selected': selectedId === node.id }"
         @click="select(node.id)"
+        draggable="true"
+        @dragstart="emit('dragstart', $event, node)"
+        @drop="emit('drop', $event, node)"
+        @dragover.prevent
       >
         <button 
           v-if="node.children && node.children.length > 0" 
@@ -67,13 +73,15 @@ function select(id: string) {
       </div>
 
       <div v-if="expanded.has(node.id) && node.children.length > 0" class="children">
-        <CategoryTree 
-          :nodes="node.children" 
+        <CategoryTree
+          :nodes="node.children"
           :selectedId="selectedId"
           @select="emit('select', $event)"
           @add="emit('add', $event)"
           @edit="emit('edit', $event)"
           @delete="emit('delete', $event)"
+          @dragstart="(e, n) => emit('dragstart', e, n)"
+          @drop="(e, n) => emit('drop', e, n)"
         />
       </div>
     </li>

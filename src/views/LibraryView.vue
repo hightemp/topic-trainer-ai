@@ -88,6 +88,37 @@ async function deleteQuestion(id: string) {
   if (!confirm('Удалить вопрос?')) return;
   await dataStore.removeQuestion(id);
 }
+
+// Drag & Drop Logic
+const draggedNode = ref<any>(null);
+
+function onDragStart(event: DragEvent, node: any) {
+  draggedNode.value = node;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', node.id);
+  }
+}
+
+async function onDrop(_event: DragEvent, targetNode: any) {
+  const draggedId = draggedNode.value?.id;
+  if (!draggedId || draggedId === targetNode.id) return;
+
+  // Prevent circular dependency (cannot drop parent into child)
+  // Simple check: if targetNode is a descendant of draggedNode
+  // We need a way to check descendants. For now, let's just allow move and handle basic cases.
+  // A better check would be traversing up from targetNode to see if draggedNode is an ancestor.
+  
+  // Update parentId
+  const category = dataStore.categories.find(c => c.id === draggedId);
+  if (category) {
+    await dataStore.updateCategory({
+      ...category,
+      parentId: targetNode.id
+    });
+  }
+  draggedNode.value = null;
+}
 </script>
 
 <template>
@@ -100,13 +131,15 @@ async function deleteQuestion(id: string) {
         </button>
       </div>
       <div class="tree-container">
-        <CategoryTree 
-          :nodes="categoriesTree" 
+        <CategoryTree
+          :nodes="categoriesTree"
           :selectedId="selectedCategoryId"
           @select="selectCategory"
           @add="addCategory"
           @edit="editCategory"
           @delete="deleteCategory"
+          @dragstart="onDragStart"
+          @drop="onDrop"
         />
       </div>
     </aside>

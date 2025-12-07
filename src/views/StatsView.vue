@@ -42,12 +42,21 @@ async function analyzeStats() {
   if (attempts.value.length === 0) return;
   isAnalyzing.value = true;
 
+  const recentAttempts = attempts.value.slice(0, 20).map(a => {
+    const q = dataStore.questions.find(q => q.id === a.questionId);
+    return {
+      question: q ? q.text : 'Deleted',
+      score: a.aiScore,
+      userAnswer: a.userAnswer,
+      feedback: a.aiFeedback
+    };
+  });
+
   const statsSummary = `
-    Total Attempts: ${totalAttempts.value}
-    Average Score: ${averageScore.value}
-    Recent Scores: ${attempts.value.slice(0, 20).map(a => a.aiScore).join(', ')}
-    Weakest Questions (IDs): ...
-  `;
+  Total Attempts: ${totalAttempts.value}
+  Average Score: ${averageScore.value}
+  Recent Activity: ${JSON.stringify(recentAttempts)}
+`;
 
   try {
     const response = await aiService.chat([
@@ -76,6 +85,11 @@ function renderMarkdown(text: string) {
 
 function formatDate(ts: number) {
   return new Date(ts).toLocaleDateString() + ' ' + new Date(ts).toLocaleTimeString();
+}
+
+function getQuestionText(id: string) {
+  const q = dataStore.questions.find(q => q.id === id);
+  return q ? q.text.substring(0, 100) + (q.text.length > 100 ? '...' : '') : 'Вопрос удален';
 }
 </script>
 
@@ -124,9 +138,12 @@ function formatDate(ts: number) {
             </span>
           </div>
           <div class="history-q">
-             <!-- We need to find question text, but it might be deleted. -->
-             <!-- Ideally store question snapshot in attempt, but for now lookup -->
-             Question ID: {{ attempt.questionId.substring(0, 8) }}...
+             <div class="q-text-preview">
+               <strong>Вопрос:</strong> {{ getQuestionText(attempt.questionId) }}
+             </div>
+             <div class="user-answer-preview">
+               <strong>Ваш ответ:</strong> {{ attempt.userAnswer }}
+             </div>
           </div>
         </div>
         <p v-if="recentActivity.length === 0" class="opacity-70">История пуста.</p>
