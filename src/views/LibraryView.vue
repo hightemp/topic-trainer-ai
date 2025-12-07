@@ -14,6 +14,10 @@ const { categoriesTree, questions } = storeToRefs(dataStore);
 const selectedCategoryId = ref<string | null>(null);
 const showQuestionEditor = ref(false);
 const editingQuestion = ref<Question | null>(null);
+const sidebarWidth = ref(300);
+const isResizing = ref(false);
+const categorySearch = ref('');
+const questionSearch = ref('');
 
 onMounted(async () => {
   if (!dataStore.isLoaded) {
@@ -23,7 +27,40 @@ onMounted(async () => {
 
 const filteredQuestions = computed(() => {
   if (!selectedCategoryId.value) return [];
-  return questions.value.filter(q => q.categoryId === selectedCategoryId.value);
+  let qs = questions.value.filter(q => q.categoryId === selectedCategoryId.value);
+  
+  if (questionSearch.value.trim()) {
+    const term = questionSearch.value.toLowerCase();
+    qs = qs.filter(q =>
+      q.text.toLowerCase().includes(term) ||
+      q.tags.some(t => t.toLowerCase().includes(term))
+    );
+  }
+  return qs;
+});
+
+const filteredCategoriesTree = computed(() => {
+  if (!categorySearch.value.trim()) return categoriesTree.value;
+  
+  const term = categorySearch.value.toLowerCase();
+  
+  // Recursive filter function
+  const filterNodes = (nodes: any[]): any[] => {
+    return nodes.reduce((acc, node) => {
+      const matches = node.name.toLowerCase().includes(term);
+      const filteredChildren = filterNodes(node.children || []);
+      
+      if (matches || filteredChildren.length > 0) {
+        acc.push({
+          ...node,
+          children: filteredChildren
+        });
+      }
+      return acc;
+    }, []);
+  };
+
+  return filterNodes(categoriesTree.value);
 });
 
 const selectedCategoryName = computed(() => {
@@ -154,20 +191,47 @@ function getDifficultyClass(diff: number) {
   if (diff === 3) return 'diff-medium';
   return 'diff-hard';
 }
+
+// Resizer Logic
+function startResize() {
+  isResizing.value = true;
+}
+
+function stopResize() {
+  isResizing.value = false;
+}
+
+function onResizerMove(e: MouseEvent) {
+  if (!isResizing.value) return;
+  // Limit width
+  const newWidth = e.clientX - 250; // Subtract sidebar width offset if needed, but here clientX is from window left
+  // Actually sidebar is inside layout. Let's assume sidebar is first element.
+  // We need relative position or just use clientX if sidebar is at left edge.
+  // Sidebar is inside .app-layout -> .sidebar (250px) -> router-view -> .library-layout -> .categories-sidebar
+  // So e.clientX includes main sidebar width (250px).
+  
+  const w = e.clientX - 250 - 20; // 250px main sidebar + 20px padding
+  if (w > 200 && w < 600) {
+    sidebarWidth.value = w;
+  }
+}
 </script>
 
 <template>
-  <div class="library-layout">
-    <aside class="categories-sidebar">
+  <div class="library-layout" @mousemove="onResizerMove" @mouseup="stopResize" @mouseleave="stopResize">
+    <aside class="categories-sidebar" :style="{ width: sidebarWidth + 'px' }">
       <div class="sidebar-header">
         <h2>Категории</h2>
         <button class="icon-btn" @click="addCategory(null)" title="Add Root Category">
           <Plus :size="20" />
         </button>
       </div>
+      <div class="search-box mb-2">
+        <input v-model="categorySearch" type="text" placeholder="Поиск категорий..." class="search-input" />
+      </div>
       <div class="tree-container">
         <CategoryTree
-          :nodes="categoriesTree"
+          :nodes="filteredCategoriesTree"
           :selectedId="selectedCategoryId"
           @select="selectCategory"
           @add="addCategory"
@@ -178,15 +242,20 @@ function getDifficultyClass(diff: number) {
         />
       </div>
     </aside>
+    
+    <div class="resizer" @mousedown="startResize"></div>
 
     <main class="questions-main">
       <div v-if="selectedCategoryId">
         <div class="main-header">
           <h2>{{ selectedCategoryName }} <span class="count">({{ filteredQuestions.length }})</span></h2>
-          <button v-if="!showQuestionEditor" class="primary" @click="openAddQuestion">
-            <Plus :size="16" style="margin-right: 8px" />
-            Добавить вопрос
-          </button>
+          <div class="header-actions">
+            <input v-model="questionSearch" type="text" placeholder="Поиск вопросов..." class="search-input question-search" />
+            <button v-if="!showQuestionEditor" class="primary" @click="openAddQuestion">
+              <Plus :size="16" style="margin-right: 8px" />
+              Добавить вопрос
+            </button>
+          </div>
         </div>
 
         <div v-if="showQuestionEditor" class="mt-4">
@@ -242,11 +311,23 @@ function getDifficultyClass(diff: number) {
 }
 
 .categories-sidebar {
-  width: 300px;
-  border-right: 1px solid var(--color-border);
+  /* width set via style binding */
+  /* border-right: 1px solid var(--color-border); moved to resizer */
   padding-right: var(--spacing-md);
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
+}
+
+.resizer {
+  width: 4px;
+  cursor: col-resize;
+  background-color: var(--color-border);
+  transition: background-color 0.2s;
+}
+
+.resizer:hover, .resizer:active {
+  background-color: var(--color-primary);
 }
 
 .sidebar-header {
@@ -273,6 +354,29 @@ function getDifficultyClass(diff: number) {
   align-items: center;
   border-bottom: 1px solid var(--color-border);
   padding-bottom: var(--spacing-md);
+}
+
+.header-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+.search-box {
+  margin-bottom: 8px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+.question-search {
+  width: 200px;
 }
 
 .count {
