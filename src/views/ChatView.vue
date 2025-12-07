@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from 'vue';
-import { Send, Bot, User, Loader2 } from 'lucide-vue-next';
+import { ref, nextTick, onMounted, onUnmounted } from 'vue';
+import { Send, Bot, User, Loader2, Square, Trash2 } from 'lucide-vue-next';
 import { aiService } from '../services/ai';
 import { useDataStore } from '../stores/data';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,6 +11,7 @@ const messages = ref<any[]>([]);
 const input = ref('');
 const isLoading = ref(false);
 const chatContainer = ref<HTMLElement | null>(null);
+const abortController = ref<AbortController | null>(null);
 
 onMounted(() => {
   messages.value.push({
@@ -59,7 +60,77 @@ async function handleToolCall(name: string, args: any) {
     return dataStore.categories.map(c => ({ id: c.id, name: c.name, parentId: c.parentId }));
   }
 
+  if (name === 'update_category') {
+    const cat = dataStore.categories.find(c => c.id === args.id);
+    if (!cat) return { error: 'Category not found' };
+    await dataStore.updateCategory({
+      ...cat,
+      name: args.name || cat.name,
+      parentId: args.parentId !== undefined ? args.parentId : cat.parentId
+    });
+    return { success: true, message: 'Category updated.' };
+  }
+
+  if (name === 'delete_category') {
+    await dataStore.removeCategory(args.id);
+    return { success: true, message: 'Category deleted.' };
+  }
+
+  if (name === 'get_questions') {
+    let qs = dataStore.questions;
+    if (args.categoryId) {
+      qs = qs.filter(q => q.categoryId === args.categoryId);
+    }
+    const limit = args.limit || 20;
+    return qs.slice(0, limit).map(q => ({
+      id: q.id,
+      text: q.text,
+      correctAnswer: q.correctAnswer,
+      difficulty: q.difficulty,
+      tags: q.tags,
+      categoryId: q.categoryId
+    }));
+  }
+
+  if (name === 'update_question') {
+    const q = dataStore.questions.find(q => q.id === args.id);
+    if (!q) return { error: 'Question not found' };
+    await dataStore.updateQuestion({
+      ...q,
+      text: args.text || q.text,
+      correctAnswer: args.correctAnswer || q.correctAnswer,
+      difficulty: args.difficulty || q.difficulty,
+      tags: args.tags || q.tags,
+      categoryId: args.categoryId || q.categoryId
+    });
+    return { success: true, message: 'Question updated.' };
+  }
+
+  if (name === 'delete_question') {
+    await dataStore.removeQuestion(args.id);
+    return { success: true, message: 'Question deleted.' };
+  }
+
   return { error: 'Unknown tool' };
+}
+
+function stopGeneration() {
+  if (abortController.value) {
+    abortController.value.abort();
+    abortController.value = null;
+    isLoading.value = false;
+    messages.value.push({ role: 'assistant', content: 'Генерация остановлена.' });
+    scrollToBottom();
+  }
+}
+
+function clearChat() {
+  if (confirm('Очистить историю чата?')) {
+    messages.value = [{
+      role: 'assistant',
+      content: 'Привет! Я помогу создать вопросы и категории. Просто скажи, по какой теме нужно сгенерировать вопросы.'
+    }];
+  }
 }
 
 async function sendMessage() {
@@ -71,6 +142,8 @@ async function sendMessage() {
   isLoading.value = true;
   scrollToBottom();
 
+  abortController.value = new AbortController();
+
   try {
     // Filter out UI-only messages or process history correctly
     const history = messages.value.map(m => ({
@@ -81,28 +154,35 @@ async function sendMessage() {
       name: m.name
     }));
 
-    const response = await aiService.chat(history, handleToolCall);
+    const response = await aiService.chat(history, handleToolCall, abortController.value.signal);
     
     // If response has content, add it
     if (response.content) {
       messages.value.push({ role: 'assistant', content: response.content });
     } else if (response.tool_calls) {
-       // If it was just tool calls (which we handled inside chat() recursion), 
-       // the final response might be a summary or empty if the model decided so.
-       // But our simple recursion in ai.chat returns the FINAL message.
-       // If the final message is from tool, we might need to wait for assistant to summarize.
-       // Actually, my implementation of ai.chat recurses until assistant gives a text response or stops calling tools.
-       // So response should be the final assistant message.
        messages.value.push({ role: 'assistant', content: response.content || 'Готово.' });
     }
 
   } catch (e: any) {
-    messages.value.push({ role: 'assistant', content: `Ошибка: ${e.message}` });
+    if (e.name === 'AbortError') {
+      // Handled in stopGeneration
+    } else {
+      messages.value.push({ role: 'assistant', content: `Ошибка: ${e.message}` });
+    }
   } finally {
-    isLoading.value = false;
+    if (abortController.value) {
+      isLoading.value = false;
+      abortController.value = null;
+    }
     scrollToBottom();
   }
 }
+
+onUnmounted(() => {
+  if (abortController.value) {
+    abortController.value.abort();
+  }
+});
 
 function renderMarkdown(text: string) {
   return marked(text || '');
@@ -135,14 +215,24 @@ function renderMarkdown(text: string) {
     </div>
 
     <div class="input-area">
+      <div class="toolbar">
+        <button type="button" @click="clearChat" class="icon-btn" title="Очистить чат">
+          <Trash2 :size="18" />
+        </button>
+      </div>
       <form @submit.prevent="sendMessage" class="input-form">
-        <input 
-          v-model="input" 
-          type="text" 
-          placeholder="Сгенерируй 5 вопросов по Vue 3 Composition API..." 
+        <textarea
+          v-model="input"
+          placeholder="Сгенерируй 5 вопросов по Vue 3 Composition API..."
           :disabled="isLoading"
-        />
-        <button type="submit" :disabled="isLoading || !input.trim()">
+          @keydown.enter.exact.prevent="sendMessage"
+          rows="1"
+          class="chat-input"
+        ></textarea>
+        <button v-if="isLoading" type="button" @click="stopGeneration" class="stop-btn" title="Остановить">
+          <Square :size="20" fill="currentColor" />
+        </button>
+        <button v-else type="submit" :disabled="!input.trim()">
           <Send :size="20" />
         </button>
       </form>
@@ -212,11 +302,53 @@ function renderMarkdown(text: string) {
   padding: var(--spacing-md);
   background-color: var(--color-bg);
   border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text);
+  opacity: 0.6;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.icon-btn:hover {
+  opacity: 1;
+  background-color: var(--color-surface-hover);
 }
 
 .input-form {
   display: flex;
   gap: var(--spacing-md);
+  align-items: flex-end;
+}
+
+.chat-input {
+  flex: 1;
+  resize: none;
+  min-height: 42px;
+  max-height: 150px;
+  padding: 10px;
+  line-height: 1.5;
+}
+
+.stop-btn {
+  color: var(--color-danger);
+}
+
+.stop-btn:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: var(--color-danger);
 }
 
 .spin {

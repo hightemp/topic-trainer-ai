@@ -62,11 +62,88 @@ export class AIService {
             properties: {}
           }
         }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'update_category',
+          description: 'Update an existing category',
+          parameters: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'ID of the category to update' },
+              name: { type: 'string', description: 'New name (optional)' },
+              parentId: { type: 'string', description: 'New parent ID (optional)', nullable: true }
+            },
+            required: ['id']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'delete_category',
+          description: 'Delete a category',
+          parameters: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'ID of the category to delete' }
+            },
+            required: ['id']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'get_questions',
+          description: 'Get list of questions (optionally filtered by category)',
+          parameters: {
+            type: 'object',
+            properties: {
+              categoryId: { type: 'string', description: 'Filter by category ID (optional)' },
+              limit: { type: 'number', description: 'Max number of questions to return (default 20)' }
+            }
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'update_question',
+          description: 'Update an existing question',
+          parameters: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'ID of the question to update' },
+              text: { type: 'string', description: 'New text (optional)' },
+              correctAnswer: { type: 'string', description: 'New correct answer (optional)' },
+              difficulty: { type: 'number', description: 'New difficulty (optional)' },
+              tags: { type: 'array', items: { type: 'string' }, description: 'New tags (optional)' },
+              categoryId: { type: 'string', description: 'New category ID (optional)' }
+            },
+            required: ['id']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'delete_question',
+          description: 'Delete a question',
+          parameters: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'ID of the question to delete' }
+            },
+            required: ['id']
+          }
+        }
       }
     ];
   }
 
-  async chat(messages: Message[], onToolCall: (toolName: string, args: any) => Promise<any>): Promise<Message> {
+  async chat(messages: Message[], onToolCall: (toolName: string, args: any) => Promise<any>, signal?: AbortSignal): Promise<Message> {
     if (!this.apiKey) {
       throw new Error('API Key not configured');
     }
@@ -83,7 +160,8 @@ export class AIService {
         model: this.model,
         messages,
         tools: this.tools
-      })
+      }),
+      signal
     });
 
     if (!response.ok) {
@@ -120,7 +198,7 @@ export class AIService {
       }
 
       // Recursively call chat with tool results
-      return this.chat([...messages, ...toolMessages], onToolCall);
+      return this.chat([...messages, ...toolMessages], onToolCall, signal);
     }
 
     return message;
