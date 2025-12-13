@@ -1,6 +1,8 @@
 import { marked } from 'marked';
 import hljs from 'highlight.js';
-import 'highlight.js/styles/github-dark.css';
+
+// Import custom highlight styles
+import '../styles/highlight.css';
 
 // Create custom renderer with syntax highlighting
 const renderer = new marked.Renderer();
