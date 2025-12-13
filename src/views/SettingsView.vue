@@ -155,28 +155,133 @@ async function importData(event: Event) {
 </template>
 
 <style scoped>
-.block { display: block; }
-.opacity-70 { opacity: 0.7; }
-.text-success { color: var(--color-success); }
-.text-danger { color: var(--color-danger); }
+.container {
+  animation: fadeIn var(--transition-base);
+  max-width: 800px;
+}
+
+.container h1 {
+  margin-bottom: var(--spacing-xl);
+}
+
+.card {
+  animation: slideInRight var(--transition-base);
+  margin-bottom: var(--spacing-xl);
+}
+
+.card h3 {
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 2px solid var(--color-border);
+  font-size: var(--font-size-xl);
+}
+
+form > div {
+  margin-bottom: var(--spacing-lg);
+}
+
+label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+input[type="text"],
+input[type="password"] {
+  transition: all var(--transition-base);
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+  transform: translateY(-2px);
+}
+
+.block {
+  display: block;
+}
+
+.opacity-70 {
+  opacity: 0.7;
+}
+
+.text-success {
+  color: var(--color-success);
+  font-weight: var(--font-weight-semibold);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-success-light);
+  border-radius: var(--radius-md);
+  display: inline-block;
+  animation: fadeIn var(--transition-base);
+}
+
+.text-danger {
+  color: var(--color-danger);
+  font-weight: var(--font-weight-semibold);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-danger-light);
+  border-radius: var(--radius-md);
+  display: inline-block;
+  animation: fadeIn var(--transition-base);
+}
 
 .secondary {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-elevated) 100%);
+  border: 2px solid var(--color-border);
   color: var(--color-text);
-  padding: 0.6em 1.2em;
-  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .secondary:hover {
-  background-color: var(--color-surface-hover);
+  background: linear-gradient(135deg, var(--color-surface-hover) 0%, var(--color-surface) 100%);
   border-color: var(--color-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .button-like {
   display: inline-block;
   text-align: center;
+}
+
+.flex.items-center.gap-4 {
+  flex-wrap: wrap;
+}
+
+p.text-sm {
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-info);
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: var(--spacing-md);
+  }
+
+  .flex.gap-4 {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .secondary {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>
