@@ -23,6 +23,12 @@ onMounted(async () => {
   if (!dataStore.isLoaded) {
     await dataStore.loadData();
   }
+  
+  // Load saved sidebar width
+  const savedWidth = localStorage.getItem('library-sidebar-width');
+  if (savedWidth) {
+    sidebarWidth.value = parseInt(savedWidth, 10);
+  }
 });
 
 const filteredQuestions = computed(() => {
@@ -193,23 +199,61 @@ function getDifficultyClass(diff: number) {
 }
 
 // Resizer Logic
-function startResize() {
+function startResize(e: MouseEvent) {
   isResizing.value = true;
+  e.preventDefault();
 }
 
 function stopResize() {
-  isResizing.value = false;
+  if (isResizing.value) {
+    isResizing.value = false;
+    // Save sidebar width to localStorage
+    localStorage.setItem('library-sidebar-width', sidebarWidth.value.toString());
+  }
 }
 
 function onResizerMove(e: MouseEvent) {
   if (!isResizing.value) return;
   
-  // Sidebar is inside .app-layout -> .sidebar (250px) -> router-view -> .library-layout -> .categories-sidebar
-  // So e.clientX includes main sidebar width (250px).
+  // Calculate width relative to the viewport
+  // Main sidebar is 280px (from App.vue), content starts after that
+  const mainSidebarWidth = 280;
+  const w = e.clientX - mainSidebarWidth;
   
-  const w = e.clientX - 250 - 20; // 250px main sidebar + 20px padding
-  if (w > 200 && w < 600) {
+  if (w >= 200 && w <= 600) {
     sidebarWidth.value = w;
+  }
+}
+
+// Drop to root functionality
+async function onDropToRoot(event: DragEvent) {
+  event.preventDefault();
+  const type = event.dataTransfer?.getData('type');
+  
+  if (type === 'question') {
+    // Questions can't be in root
+    return;
+  }
+  
+  // Move category to root
+  const draggedId = draggedNode.value?.id;
+  if (!draggedId) return;
+  
+  const category = dataStore.categories.find(c => c.id === draggedId);
+  if (category) {
+    await dataStore.updateCategory({
+      ...category,
+      parentId: null
+    });
+  }
+  draggedNode.value = null;
+}
+
+function onDragOverRoot(event: DragEvent) {
+  event.preventDefault();
+  const type = event.dataTransfer?.getData('type');
+  if (type !== 'question') {
+    event.dataTransfer!.dropEffect = 'move';
   }
 }
 </script>
@@ -219,12 +263,19 @@ function onResizerMove(e: MouseEvent) {
     <aside class="categories-sidebar" :style="{ width: sidebarWidth + 'px' }">
       <div class="sidebar-header">
         <h2>Категории</h2>
-        <button class="icon-btn" @click="addCategory(null)" title="Add Root Category">
+        <button class="icon-btn" @click="addCategory(null)" title="Добавить корневую категорию">
           <Plus :size="20" />
         </button>
       </div>
       <div class="search-box mb-2">
         <input v-model="categorySearch" type="text" placeholder="Поиск категорий..." class="search-input" />
+      </div>
+      <div
+        class="drop-to-root-zone"
+        @drop="onDropToRoot"
+        @dragover="onDragOverRoot"
+      >
+        <span class="drop-hint">📁 Перетащите сюда для перемещения в корень</span>
       </div>
       <div class="tree-container">
         <CategoryTree
@@ -365,6 +416,34 @@ function onResizerMove(e: MouseEvent) {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.drop-to-root-zone {
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-hover);
+  text-align: center;
+  transition: all var(--transition-base);
+  cursor: pointer;
+}
+
+.drop-to-root-zone:hover,
+.drop-to-root-zone:dragover {
+  border-color: var(--color-primary);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  transform: scale(1.02);
+}
+
+.drop-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.drop-to-root-zone:hover .drop-hint {
+  color: var(--color-primary);
 }
 
 .tree-container {
