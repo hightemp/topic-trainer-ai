@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { RouterLink, RouterView, useRoute } from 'vue-router';
+import { RouterLink, RouterView } from 'vue-router';
 import { Book, Brain, MessageSquare, BarChart2, Settings, Moon, Sun, Menu, X } from 'lucide-vue-next';
 import { useSettingsStore } from './stores/settings';
 
 const settingsStore = useSettingsStore();
-const route = useRoute();
 
 const isDark = ref(false);
 const isMobileMenuOpen = ref(false);
