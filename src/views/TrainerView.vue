@@ -4,7 +4,7 @@ import { useDataStore } from '../stores/data';
 import { aiService } from '../services/ai';
 import { dbService } from '../services/db';
 import { v4 as uuidv4 } from 'uuid';
-import { marked } from 'marked';
+import { renderMarkdown } from '../utils/markdown';
 import { Play, CheckCircle, XCircle, Clock, AlertCircle, ListTree, Circle } from 'lucide-vue-next';
 import type { Question, Attempt } from '../types';
 
@@ -198,10 +198,6 @@ function nextQuestion() {
   } else {
     mode.value = 'result';
   }
-}
-
-function renderMarkdown(text: string) {
-  return marked(text || '');
 }
 
 function getCategoryName(id: string) {

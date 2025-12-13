@@ -4,7 +4,7 @@ import { Send, Bot, User, Loader2, Square, Trash2 } from 'lucide-vue-next';
 import { aiService } from '../services/ai';
 import { useDataStore } from '../stores/data';
 import { v4 as uuidv4 } from 'uuid';
-import { marked } from 'marked';
+import { renderMarkdown } from '../utils/markdown';
 
 const dataStore = useDataStore();
 const messages = ref<any[]>([]);
@@ -184,9 +184,6 @@ onUnmounted(() => {
   }
 });
 
-function renderMarkdown(text: string) {
-  return marked(text || '');
-}
 </script>
 
 <template>

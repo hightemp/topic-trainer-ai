@@ -5,7 +5,7 @@ import { dbService } from '../services/db';
 import { aiService } from '../services/ai';
 import { BarChart2, TrendingUp, Brain } from 'lucide-vue-next';
 import type { Attempt } from '../types';
-import { marked } from 'marked';
+import { renderMarkdown } from '../utils/markdown';
 
 const dataStore = useDataStore();
 const attempts = ref<Attempt[]>([]);
@@ -77,10 +77,6 @@ async function analyzeStats() {
   } finally {
     isAnalyzing.value = false;
   }
-}
-
-function renderMarkdown(text: string) {
-  return marked(text || '');
 }
 
 function formatDate(ts: number) {

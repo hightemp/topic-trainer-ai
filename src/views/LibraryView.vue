@@ -7,6 +7,7 @@ import { Plus, Trash2, Edit2 } from 'lucide-vue-next';
 import CategoryTree from '../components/CategoryTree.vue';
 import QuestionEditor from '../components/QuestionEditor.vue';
 import type { Category, Question } from '../types';
+import { renderMarkdownInline } from '../utils/markdown';
 
 const dataStore = useDataStore();
 const { categoriesTree, questions } = storeToRefs(dataStore);
@@ -322,7 +323,7 @@ function onDragOverRoot(event: DragEvent) {
               draggable="true"
               @dragstart="onQuestionDragStart($event, q)"
             >
-              <div class="q-text">{{ q.text }}</div>
+              <div class="q-text markdown-content" v-html="renderMarkdownInline(q.text)"></div>
               <div class="q-meta">
                 <span class="badge" :class="getDifficultyClass(q.difficulty)">
                   {{ getDifficultyLabel(q.difficulty) }}
