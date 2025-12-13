@@ -1,8 +1,10 @@
 import { marked } from 'marked';
 import hljs from 'highlight.js';
+import { renderMath } from './mathjax';
 
-// Import custom highlight styles
+// Import custom styles
 import '../styles/highlight.css';
+import '../styles/math.css';
 
 // Create custom renderer with syntax highlighting
 const renderer = new marked.Renderer();
@@ -37,12 +39,21 @@ marked.setOptions({
 
 export function renderMarkdown(text: string): string {
   if (!text) return '';
-  return marked(text) as string;
+  
+  // First, render LaTeX math
+  const withMath = renderMath(text);
+  
+  // Then, render markdown
+  return marked(withMath) as string;
 }
 
 export function renderMarkdownInline(text: string): string {
   if (!text) return '';
-  // For inline rendering, remove paragraph tags
-  const html = marked(text) as string;
+  
+  // First, render LaTeX math
+  const withMath = renderMath(text);
+  
+  // Then, render markdown and remove paragraph tags
+  const html = marked(withMath) as string;
   return html.replace(/^<p>|<\/p>$/g, '');
 }

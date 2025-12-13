@@ -12,6 +12,7 @@
     "@types/uuid": "^10.0.0",
     "highlight.js": "^11.11.1",
     "idb": "^8.0.3",
+    "katex": "^0.16.27",
     "lucide-vue-next": "^0.556.0",
     "marked": "^17.0.1",
     "pinia": "^3.0.4",

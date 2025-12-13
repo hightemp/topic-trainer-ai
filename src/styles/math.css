@@ -1,0 +1,80 @@
+/* KaTeX Math styling */
+
+.math-inline {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 0.2em;
+}
+
+.math-display {
+  display: block;
+  margin: 1.5em 0;
+  text-align: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5em 0;
+}
+
+.math-error {
+  color: var(--color-danger);
+  background: var(--color-danger-light);
+  padding: 0.25em 0.5em;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family-mono);
+  font-size: 0.9em;
+}
+
+/* KaTeX elements inherit theme colors */
+.katex {
+  font-size: 1.1em;
+}
+
+.math-display .katex {
+  font-size: 1.2em;
+}
+
+/* Adapt KaTeX colors to theme */
+.katex .mord,
+.katex .mop,
+.katex .mbin,
+.katex .mrel,
+.katex .mopen,
+.katex .mclose,
+.katex .mpunct,
+.katex .minner {
+  color: var(--color-text);
+}
+
+/* Scrollbar for long equations */
+.math-display::-webkit-scrollbar {
+  height: 6px;
+}
+
+.math-display::-webkit-scrollbar-track {
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+}
+
+.math-display::-webkit-scrollbar-thumb {
+  background: var(--color-border-dark);
+  border-radius: var(--radius-sm);
+}
+
+.math-display::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+/* Responsive math */
+@media (max-width: 768px) {
+  .katex {
+    font-size: 1em;
+  }
+  
+  .math-display .katex {
+    font-size: 1.1em;
+  }
+  
+  .math-display {
+    margin: 1em 0;
+  }
+}
