@@ -104,5 +104,14 @@ export const dbService = {
   async getAttemptsByQuestion(questionId: string): Promise<Attempt[]> {
     const db = await getDB();
     return db.getAllFromIndex('attempts', 'by-question', questionId);
+  },
+  async getAllAttempts(): Promise<Attempt[]> {
+    const db = await getDB();
+    return db.getAll('attempts');
+  },
+  async getAttemptsByDateRange(startDate: number, endDate: number): Promise<Attempt[]> {
+    const db = await getDB();
+    const allAttempts = await db.getAllFromIndex('attempts', 'by-date');
+    return allAttempts.filter(a => a.date >= startDate && a.date <= endDate);
   }
 };
