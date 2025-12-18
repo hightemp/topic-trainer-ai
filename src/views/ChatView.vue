@@ -1,10 +1,11 @@
+<script lang="ts">
+export default {
+  name: 'ChatView'
+};
+</script>
+
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue';
-
-// Define component name for KeepAlive
-defineOptions({
-  name: 'ChatView'
-});
 import { Send, Bot, User, Loader2, Square, Trash2 } from 'lucide-vue-next';
 import { aiService } from '../services/ai';
 import { useDataStore } from '../stores/data';

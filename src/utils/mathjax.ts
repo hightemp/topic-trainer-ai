@@ -11,7 +11,7 @@ export function renderMath(text: string): string {
   let result = text;
   
   // Process display math ($$...$$) first
-  result = result.replace(/\$\$([^$]+)\$\$/g, (match, latex) => {
+  result = result.replace(/\$\$([^$]+)\$\$/g, (_match, latex) => {
     try {
       const html = katex.renderToString(latex.trim(), {
         displayMode: true,
@@ -26,7 +26,7 @@ export function renderMath(text: string): string {
   });
   
   // Process inline math ($...$)
-  result = result.replace(/\$([^$]+)\$/g, (match, latex) => {
+  result = result.replace(/\$([^$]+)\$/g, (_match, latex) => {
     try {
       const html = katex.renderToString(latex.trim(), {
         displayMode: false,

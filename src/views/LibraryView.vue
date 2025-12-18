@@ -1,10 +1,11 @@
+<script lang="ts">
+export default {
+  name: 'LibraryView'
+};
+</script>
+
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
-
-// Define component name for KeepAlive
-defineOptions({
-  name: 'LibraryView'
-});
 import { useDataStore } from '../stores/data';
 import { storeToRefs } from 'pinia';
 import { v4 as uuidv4 } from 'uuid';
