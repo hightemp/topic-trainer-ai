@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
+
+// Define component name for KeepAlive
+defineOptions({
+  name: 'LibraryView'
+});
 import { useDataStore } from '../stores/data';
 import { storeToRefs } from 'pinia';
 import { v4 as uuidv4 } from 'uuid';
@@ -30,6 +35,31 @@ onMounted(async () => {
   if (savedWidth) {
     sidebarWidth.value = parseInt(savedWidth, 10);
   }
+  
+  // Load saved library state
+  const savedState = localStorage.getItem('library-state');
+  if (savedState) {
+    try {
+      const state = JSON.parse(savedState);
+      selectedCategoryId.value = state.selectedCategoryId || null;
+      showQuestionEditor.value = state.showQuestionEditor || false;
+      categorySearch.value = state.categorySearch || '';
+      questionSearch.value = state.questionSearch || '';
+    } catch (e) {
+      console.error('Failed to load library state:', e);
+    }
+  }
+});
+
+// Watch and save library state to localStorage
+watch([selectedCategoryId, showQuestionEditor, categorySearch, questionSearch], () => {
+  const state = {
+    selectedCategoryId: selectedCategoryId.value,
+    showQuestionEditor: showQuestionEditor.value,
+    categorySearch: categorySearch.value,
+    questionSearch: questionSearch.value
+  };
+  localStorage.setItem('library-state', JSON.stringify(state));
 });
 
 const filteredQuestions = computed(() => {

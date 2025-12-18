@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onUnmounted } from 'vue';
+import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue';
+
+// Define component name for KeepAlive
+defineOptions({
+  name: 'ChatView'
+});
 import { Send, Bot, User, Loader2, Square, Trash2 } from 'lucide-vue-next';
 import { aiService } from '../services/ai';
 import { useDataStore } from '../stores/data';
@@ -14,11 +19,30 @@ const chatContainer = ref<HTMLElement | null>(null);
 const abortController = ref<AbortController | null>(null);
 
 onMounted(() => {
-  messages.value.push({
-    role: 'assistant',
-    content: 'Привет! Я помогу создать вопросы и категории. Просто скажи, по какой теме нужно сгенерировать вопросы.'
-  });
+  // Load saved chat state from localStorage
+  const savedMessages = localStorage.getItem('chat-messages');
+  if (savedMessages) {
+    try {
+      messages.value = JSON.parse(savedMessages);
+    } catch (e) {
+      console.error('Failed to load chat messages:', e);
+      messages.value.push({
+        role: 'assistant',
+        content: 'Привет! Я помогу создать вопросы и категории. Просто скажи, по какой теме нужно сгенерировать вопросы.'
+      });
+    }
+  } else {
+    messages.value.push({
+      role: 'assistant',
+      content: 'Привет! Я помогу создать вопросы и категории. Просто скажи, по какой теме нужно сгенерировать вопросы.'
+    });
+  }
 });
+
+// Watch messages and save to localStorage
+watch(messages, (newMessages) => {
+  localStorage.setItem('chat-messages', JSON.stringify(newMessages));
+}, { deep: true });
 
 async function scrollToBottom() {
   await nextTick();
@@ -130,6 +154,7 @@ function clearChat() {
       role: 'assistant',
       content: 'Привет! Я помогу создать вопросы и категории. Просто скажи, по какой теме нужно сгенерировать вопросы.'
     }];
+    localStorage.setItem('chat-messages', JSON.stringify(messages.value));
   }
 }
 
